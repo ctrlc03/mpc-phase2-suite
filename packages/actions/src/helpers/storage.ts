@@ -1,14 +1,12 @@
-import { Functions, httpsCallable } from "firebase/functions"
+import { Functions, httpsCallable, HttpsCallable } from "firebase/functions"
 import mime from "mime-types"
 import fs, { readFileSync } from "fs"
 import fetch from "@adobe/node-fetch-retry"
 import https from "https"
 import { FirebaseStorage, ref, uploadBytes, UploadResult } from "firebase/storage"
 import { ETagWithPartNumber, ChunkWithUrl } from "../../types"
-import {
-    temporaryStoreCurrentContributionMultiPartUploadId,
-    temporaryStoreCurrentContributionUploadedChunkData
-} from "../core/contribute"
+import { FirebaseStorage, ref, uploadBytes, UploadResult } from "firebase/storage"
+import { readFileSync } from "fs"
 
 /**
  * Return the bucket name based on ceremony prefix.
@@ -70,7 +68,7 @@ export const openMultiPartUpload = async (
     ceremonyId?: string
 ): Promise<string> => {
     // Call startMultiPartUpload() Cloud Function.
-    const cf = httpsCallable(functions, "startMultiPartUpload")
+    const cf = httpsCallable(functions, 'startMultiPartUpload')
     const response: any = await cf({
         bucketName,
         objectKey,
@@ -83,6 +81,7 @@ export const openMultiPartUpload = async (
 
 /**
  * Get chunks and signed urls for a multi part upload.
+ * @param configStreamChunk <string> - the size of stream chunks.
  * @param functions <Functions> - the cloud functions.
  * @param bucketName <string> - the name of the AWS S3 bucket.
  * @param objectKey <string> - the identifier of the object.
@@ -94,6 +93,7 @@ export const openMultiPartUpload = async (
  * @returns Promise<Array, ChunkWithUrl>
  */
 export const getChunksAndPreSignedUrls = async (
+    configStreamChunk: string,
     functions: Functions,
     bucketName: string,
     objectKey: string,
@@ -116,7 +116,7 @@ export const getChunksAndPreSignedUrls = async (
     if (!numberOfParts) throw new Error("Storage-003: File not found")
 
     // Call generatePreSignedUrlsParts() Cloud Function.
-    const cf = httpsCallable(functions, "generatePreSignedUrlsParts")
+    const cf = httpsCallable(functions, 'generatePreSignedUrlsParts')
     const response: any = await cf({
         bucketName,
         objectKey,
@@ -213,7 +213,7 @@ export const closeMultiPartUpload = async (
     ceremonyId?: string
 ): Promise<string> => {
     // Call completeMultiPartUpload() Cloud Function.
-    const cf = httpsCallable(functions, "completeMultiPartUpload")
+    const cf = httpsCallable(functions, 'completeMultiPartUpload')
     const response: any = await cf({
         bucketName,
         objectKey,
@@ -229,6 +229,7 @@ export const closeMultiPartUpload = async (
 /**
  * Upload a file by subdividing it in chunks to AWS S3 bucket.
  * @param functions <Functions> - the firebase functions.
+ * @param presignedUrlExpiration <string> - the expiration for the pre-signed url. 
  * @param bucketName <string> - the name of the AWS S3 bucket.
  * @param objectKey <string> - the path of the object inside the AWS S3 bucket.
  * @param localPath <string> - the local path of the file to be uploaded.
@@ -271,6 +272,7 @@ export const multiPartUpload = async (
     }
 
     const chunksWithUrlsZkey = await getChunksAndPreSignedUrls(
+        configStreamChunk,
         functions,
         bucketName,
         objectKey,
@@ -290,7 +292,14 @@ export const multiPartUpload = async (
         alreadyUploadedChunks
     )
 
-    await closeMultiPartUpload(functions, bucketName, objectKey, uploadIdZkey, partNumbersAndETagsZkey, ceremonyId)
+    await closeMultiPartUpload(
+        functions,
+        bucketName,
+        objectKey,
+        uploadIdZkey,
+        partNumbersAndETagsZkey,
+        ceremonyId
+    )
 
     return true
 }
@@ -300,20 +309,20 @@ export const multiPartUpload = async (
  * @param functions <Functions> - the cloud functions
  * @param bucketName <string> - the bucket name
  * @param objectKey <string> - the file name
- * @returns <Promise<any>>
+ * @returns <Promise<any>> 
  */
 export const generateGetObjectPreSignedUrl = async (
-    functions: Functions,
+    functions: Functions, 
     bucketName: string,
     objectKey: string
 ): Promise<any> => {
-    const cf = httpsCallable(functions, "generateGetObjectPreSignedUrl")
+    const cf = httpsCallable(functions, 'generateGetObjectPreSignedUrl')
     const { data } = await cf({
         bucketName,
         objectKey
     })
 
-    return data
+    return data 
 }
 
 /**
@@ -323,12 +332,22 @@ export const generateGetObjectPreSignedUrl = async (
  * @returns <Promise<any>>
  */
 export const uploadFileToStorage = async (
-    firebaseStorage: FirebaseStorage,
-    localPath: string,
+    firebaseStorage: FirebaseStorage, 
+    localPath: string, 
     storagePath: string
 ): Promise<UploadResult> => {
     // Create a reference with folder path.
     const pathReference = ref(firebaseStorage, storagePath)
 
-    return uploadBytes(pathReference, readFileSync(localPath))
+    return await uploadBytes(pathReference, readFileSync(localPath))
 }
+
+/**
+ * Convert bytes or chilobytes into gigabytes with customizable precision.
+ * @param bytesOrKB <number> - bytes or KB to be converted.
+ * @param isBytes <boolean> - true if the input is in bytes; otherwise false for KB input.
+ * @returns <number>
+ */
+export const convertToGB = (bytesOrKB: number, isBytes: boolean): number =>
+    Number(bytesOrKB / 1024 ** (isBytes ? 3 : 2))
+

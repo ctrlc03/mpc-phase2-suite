@@ -1,6 +1,6 @@
 import { DocumentData, DocumentSnapshot, Firestore, onSnapshot } from "firebase/firestore"
-import { Functions } from "firebase/functions"
-import {
+import { Functions, HttpsCallable, httpsCallable } from "firebase/functions"
+import { 
     getCeremonyCircuits,
     getContributorContributionsVerificationResults,
     getCurrentContributorContribution,
@@ -9,9 +9,8 @@ import {
     makeProgressToNextContribution,
     resumeContributionAfterTimeoutExpiration,
     formatZkeyIndex,
-    getZkeysSpaceRequirementsForContributionInGB,
-    convertToGB
-} from "@zkmpc/actions"
+    getZkeysSpaceRequirementsForContributionInGB
+ } from "@zkmpc/actions"
 import { FirebaseDocumentInfo, ParticipantContributionStep, ParticipantStatus } from "../../types/index"
 import { collections, emojis, symbols, theme } from "./constants"
 import {
@@ -28,6 +27,8 @@ import {
 } from "./utils"
 import { GENERIC_ERRORS, showError } from "./errors"
 import { askForConfirmation } from "./prompts"
+import { convertToGB } from "./storage"
+
 
 /**
  * Return the available disk space of the current contributor in GB.
@@ -46,7 +47,7 @@ const handleDiskSpaceRequirementForNextContribution = async (
     functions: Functions,
     nextCircuit: FirebaseDocumentInfo,
     ceremonyId: string,
-    functionName: string = "makeProgressToNextContribution"
+    functionName: string = 'makeProgressToNextContribution'
 ): Promise<boolean> => {
     // Get memory info.
     const zKeysSpaceRequirementsInGB = getZkeysSpaceRequirementsForContributionInGB(nextCircuit.data.zKeySizeInBytes)
@@ -104,9 +105,9 @@ const handleDiskSpaceRequirementForNextContribution = async (
         )
         spinner.start()
 
-        if (functionName === "makeProgressToNextContribution")
-            await makeProgressToNextContribution(functions, ceremonyId)
-        else await resumeContributionAfterTimeoutExpiration(functions, ceremonyId)
+        functionName === 'makeProgressToNextContribution' ? 
+        await makeProgressToNextContribution(functions, ceremonyId) : 
+        await resumeContributionAfterTimeoutExpiration(functions, ceremonyId)
 
         spinner.succeed(`All set for contribution to ${theme.bold(`Circuit ${theme.magenta(sequencePosition)}`)}`)
 
@@ -133,9 +134,9 @@ const getParticipantPositionInQueue = (contributors: Array<string>, participantI
  * @param circuit <FirebaseDocumentInfo> - the document information about the current circuit.
  */
 const listenToCircuitChanges = (
-    firestoreDatabase: Firestore,
-    participantId: string,
-    ceremonyId: string,
+    firestoreDatabase: Firestore, 
+    participantId: string, 
+    ceremonyId: string, 
     circuit: FirebaseDocumentInfo
 ) => {
     const unsubscriberForCircuitDocument = onSnapshot(circuit.ref, async (circuitDocSnap: DocumentSnapshot) => {
@@ -370,7 +371,11 @@ export default async (
                 const nextCircuit = getNextCircuitForContribution(circuits, contributionProgress + 1)
 
                 // Check disk space requirements for participant.
-                await handleDiskSpaceRequirementForNextContribution(firebaseFunctions, nextCircuit, ceremony.id)
+                await handleDiskSpaceRequirementForNextContribution(
+                    firebaseFunctions,
+                    nextCircuit,
+                    ceremony.id
+                )
             }
 
             // A. Do not have completed the contributions for each circuit; move to the next one.
@@ -561,7 +566,7 @@ export default async (
                         firebaseFunctions,
                         circuit,
                         ceremony.id,
-                        "resumeContributionAfterTimeoutExpiration"
+                        'resumeContributionAfterTimeoutExpiration'
                     )
                 }
 

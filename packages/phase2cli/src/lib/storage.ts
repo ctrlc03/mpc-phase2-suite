@@ -1,12 +1,15 @@
-import { Functions } from "firebase/functions"
+import { Functions, HttpsCallable } from "firebase/functions"
+import fs from "fs"
 import fetch from "@adobe/node-fetch-retry"
 import { createWriteStream } from "node:fs"
+import https from "https"
 import dotenv from "dotenv"
 import { SingleBar, Presets } from "cli-progress"
 import { generateGetObjectPreSignedUrl, convertToGB } from "@zkmpc/actions"
 import { ProgressBarType } from "../../types/index"
 import { GENERIC_ERRORS, showError } from "./errors"
 import { emojis, theme } from "./constants"
+import { generateGetObjectPreSignedUrl } from "@zkmpc/actions"
 
 dotenv.config()
 
@@ -50,10 +53,14 @@ export const downloadLocalFileFromBucket = async (
     localPath: string
 ): Promise<void> => {
     // Call generateGetObjectPreSignedUrl() Cloud Function.
-    const preSignedUrl = await generateGetObjectPreSignedUrl(firebaseFunctions, bucketName, objectKey)
+    const response = await generateGetObjectPreSignedUrl(firebaseFunctions, bucketName, objectKey)
+
+    // Get the pre-signed url.
+    const preSignedUrl = response.data
 
     // Get request.
     const getResponse = await fetch(preSignedUrl)
+
     if (!getResponse.ok) showError(`${GENERIC_ERRORS.GENERIC_FILE_ERROR} - ${getResponse.statusText}`, true)
 
     const contentLength = Number(getResponse.headers.get(`content-length`))
