@@ -7,19 +7,17 @@ import {
     getCeremonyCircuits,
     getContributorContributionsVerificationResults,
     getValidContributionAttestation,
-    multiPartUpload
-} from "@zkmpc/actions"
-import { httpsCallable } from "firebase/functions"
-import { handleCurrentAuthUserSignIn, onlyCoordinator } from "../lib/auth"
-import { collections, emojis, paths, solidityVersion, symbols, theme } from "../lib/constants"
-import { GENERIC_ERRORS, showError } from "../lib/errors"
-import {
+    multiPartUpload,
     checkAndMakeNewDirectoryIfNonexistent,
     getLocalFilePath,
     readFile,
     writeFile,
     writeLocalJsonFile
-} from "../lib/files"
+} from "@zkmpc/actions"
+import { httpsCallable } from "firebase/functions"
+import { handleCurrentAuthUserSignIn, onlyCoordinator } from "../lib/auth"
+import { collections, emojis, paths, solidityVersion, symbols, theme } from "../lib/constants"
+import { GENERIC_ERRORS, showError } from "../lib/errors"
 import { askForCeremonySelection, getEntropyOrBeacon } from "../lib/prompts"
 import { getClosedCeremonies } from "../lib/queries"
 import { bootstrapCommandExec, customSpinner, makeContribution, publishGist, sleep, terminate } from "../lib/utils"

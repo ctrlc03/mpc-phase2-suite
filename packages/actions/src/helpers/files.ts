@@ -5,7 +5,7 @@ import { promisify } from "node:util"
 import fetch from "node-fetch"
 import path from "path"
 import { fileURLToPath } from "url"
-import { GENERIC_ERRORS, showError } from "./errors"
+
 /**
  * Check a directory path
  * @param filePath <string> - the absolute or relative path.
@@ -57,7 +57,7 @@ export const getMatchingSubPathFile = (subPaths: Array<Dirent>, fileNameToMatch:
     const matchingPaths = subPaths.filter((subpath: Dirent) => subpath.name === fileNameToMatch)
 
     // Check.
-    if (!matchingPaths.length) showError(GENERIC_ERRORS.GENERIC_FILE_ERROR, true)
+    if (!matchingPaths.length) throw new Error(`File not found`)
 
     // Return file name.
     return matchingPaths[0].name
@@ -94,7 +94,7 @@ export const checkAndMakeNewDirectoryIfNonexistent = (dirPath: string): void => 
  * @returns <any>
  */
 export const readJSONFile = (filePath: string): any => {
-    if (!directoryExists(filePath)) showError(GENERIC_ERRORS.GENERIC_FILE_ERROR, true)
+    if (!directoryExists(filePath)) throw new Error(`Something went wrong when reading the file`)
 
     return JSON.parse(readFile(filePath))
 }
@@ -152,7 +152,7 @@ export const downloadFileFromUrl = async (dest: string, url: string): Promise<vo
 
     const response = await fetch(url)
 
-    if (!response.ok) showError(GENERIC_ERRORS.GENERIC_ERROR_RETRIEVING_DATA, true)
+    if (!response.ok) throw new Error(`Something went wrong when retrieving the data from the database`)
 
     if (response.body) await streamPipeline(response.body, createWriteStream(dest))
 }

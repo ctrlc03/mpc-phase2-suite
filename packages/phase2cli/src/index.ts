@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { createCommand } from "commander"
+import { readLocalJsonFile } from "@zkmpc/actions"
 import { setup, auth, contribute, observe, finalize, clean, logout } from "./commands/index"
-import { readLocalJsonFile } from "./lib/files"
 
 // Get pkg info (e.g., name, version).
 const pkg = readLocalJsonFile("../../package.json")

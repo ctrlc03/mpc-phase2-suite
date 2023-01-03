@@ -21,7 +21,9 @@ import {
     progressToNextContributionStep,
     verifyContribution,
     getCurrentActiveParticipantTimeout,
-    multiPartUpload
+    multiPartUpload,
+    readFile,
+    writeFile
 } from "@zkmpc/actions"
 import {
     FirebaseDocumentInfo,
@@ -34,7 +36,6 @@ import {
 import { collections, emojis, firstZkeyIndex, numIterationsExp, paths, symbols, theme } from "./constants"
 import { initServices } from "./firebase"
 import { GENERIC_ERRORS, GITHUB_ERRORS, showError } from "./errors"
-import { readFile, writeFile } from "./files"
 import { downloadLocalFileFromBucket } from "./storage"
 import { getAllCeremonies } from "./queries"
 
