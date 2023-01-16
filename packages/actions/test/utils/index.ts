@@ -4,6 +4,7 @@ import { FirebaseApp, getApp, initializeApp } from "firebase/app"
 import { connectFirestoreEmulator, Firestore, getFirestore } from "firebase/firestore"
 import { connectFunctionsEmulator, Functions, getFunctions } from "firebase/functions"
 import { connectAuthEmulator, getAuth, signInAnonymously, UserCredential } from "firebase/auth"
+import { fakeCeremoniesData, fakeCircuitsData } from "../data/samples"
 
 dotenv.config({ path: `${__dirname}/../../.env.test` })
 
@@ -130,3 +131,42 @@ export const deleteAdminApp = async () => {
  * @returns <Promise<any>>
  */
 export const sleep = (ms: any) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Creates a new mock ceremony
+ * @param adminFirestore <FirebaseFirestore.Firestore> - the Admin authenticated Firestore
+ */
+export const createCeremony = async (adminFirestore: FirebaseFirestore.Firestore) => {
+    // Create the fake data on Firestore.
+    await adminFirestore
+    .collection(`ceremonies`)
+    .doc(fakeCeremoniesData.fakeCeremonyOpenedFixed.uid)
+    .set({
+        ...fakeCeremoniesData.fakeCeremonyOpenedFixed.data
+    })
+
+    await adminFirestore
+    .collection(`ceremonies/${fakeCeremoniesData.fakeCeremonyOpenedFixed.uid}/circuits`)
+    .doc(fakeCircuitsData.fakeCircuitSmallNoContributors.uid)
+    .set({
+        ...fakeCircuitsData.fakeCircuitSmallNoContributors.data
+    })
+
+}
+
+/**
+ * Delete a mock ceremony
+ * @param adminFirestore <FirebaseFirestore.Firestore> - the Admin authenticated Firestore
+ */
+export const deleteCeremony = async (adminFirestore: FirebaseFirestore.Firestore) => {
+    await adminFirestore
+    .collection(`ceremonies/${fakeCeremoniesData.fakeCeremonyOpenedFixed.uid}/circuits`)
+    .doc(fakeCircuitsData.fakeCircuitSmallNoContributors.uid)
+    .delete()
+
+    // TODO: use a listener.
+    // nb. workaround (wait until circuit has been deleted, then delete the ceremony).
+    await sleep(1000)
+
+    await adminFirestore.collection(`ceremonies`).doc(fakeCeremoniesData.fakeCeremonyOpenedFixed.uid).delete()
+}
