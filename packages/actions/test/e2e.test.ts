@@ -1,29 +1,39 @@
 import dotenv from 'dotenv'
-import chai from "chai"
+import chai, { assert } from "chai"
 import chaiAsPromised from "chai-as-promised"
 import {
     checkParticipantForCeremony,
+    createS3Bucket,
+    getBucketName,
     getCeremonyCircuits,
     getCurrentFirebaseAuthUser,
     getDocumentById,
     getNewOAuthTokenUsingGithubDeviceFlow,
     getNextCircuitForContribution,
     getOpenedCeremonies,
+    multiPartUpload,
     signInToFirebaseWithGithubToken
 } from '../src/index'
 import path from "path"
-import { deleteAdminApp, initializeAdminServices, initializeUserServices } from "./utils"
-import { collections } from "../src/helpers/constants"
+import { deleteAdminApp, initializeAdminServices, initializeUserServices, sleep } from "./utils"
+import { collections, names, potFilenameTemplate } from "../src/helpers/constants"
 import { createCeremony, deleteCeremony } from './utils'
+import { fakeCircuitsData } from './data/samples'
+import { randomBytes} from "crypto"
 
 jest.setTimeout(50000000)
+
+const convertToDoubleDigits = (amount: number): string => (amount < 10 ? `0${amount}` : amount.toString())
 
 // Config chai.
 chai.use(chaiAsPromised)
 dotenv.config({ path: path.join(__dirname, '../.env.test')})
 
 describe("E2E", () => {
-    if (!process.env.GITHUB_CLIENT_ID) throw new Error("Not configured correctly")
+    if (
+        !process.env.GITHUB_CLIENT_ID ||
+        !process.env.CONFIG_CEREMONY_BUCKET_POSTFIX
+    ) throw new Error("Not configured correctly")
 
     const { adminFirestore } = initializeAdminServices()
     const { userApp, userFirestore, userFunctions } = initializeUserServices()
@@ -104,9 +114,60 @@ describe("E2E", () => {
     })  
 
 
-    describe('Setup', () => {
-        it('fails to setup a new ceremony due to some error with the circuit files', async () => {
+    describe.only('Setup', () => {
+        it('fails to setup a new ceremony due to some error with files required for the ceremony', async () => {
+            /**
+             * Steps
+             * Auth
+             * Read R1CS
+             * Get ceremony details
+             * Get circuit details
+             * Extract circuit metadata
+             * Create S3 bucket
+             * Check if zkeys are already generated
+             * Upload data to S3
+             * Call SetupCeremony Cloud function
+             */
+           
+            // 1. Auth
+            const token = await getNewOAuthTokenUsingGithubDeviceFlow(
+                String(process.env.GITHUB_CLIENT_ID)
+            )
 
+            await signInToFirebaseWithGithubToken(userApp, token)
+
+            // 2. Mock data extraction
+            const circuit = fakeCircuitsData.fakeCircuitSmallNoContributors
+            let stringifyNeededPowers = convertToDoubleDigits(circuit.data.metadata.pot)
+            let smallestPotForCircuit = `${potFilenameTemplate}${stringifyNeededPowers}.ptau`            
+            const potStoragePath = `${names.pot}`
+            let potStorageFilePath = `${potStoragePath}/${smallestPotForCircuit}`
+
+            const zkeyStoragePath = `${collections.circuits}/${circuit.data.prefix}/${collections.contributions}`
+            const firstZkeyFileName = `${circuit.data.prefix}_00000.zkey`
+            const zkeyStorageFilePath = `${zkeyStoragePath}/${firstZkeyFileName}`
+
+            const r1csFileName = `${circuit.data.name}.r1cs`
+            const r1csStoragePath = `${collections.circuits}/${circuit.data.prefix}`
+            const r1csStorageFilePath = `${r1csStoragePath}/${r1csFileName}`
+
+            // 3. create s3 bucket
+            const ceremonyPrefix = randomBytes(20).toString('hex')
+            const bucketName = getBucketName(ceremonyPrefix, process.env.CONFIG_CEREMONY_BUCKET_POSTFIX!)
+            const success = await createS3Bucket(userFunctions, bucketName)
+            expect(success).toBeTruthy
+
+            await sleep(1000)
+
+            // 4. Upload
+            assert.isRejected(multiPartUpload(
+                userFunctions,
+                bucketName,
+                zkeyStorageFilePath,
+                zkeyStoragePath,
+                process.env.CONFIG_STREAM_CHUNK_SIZE_IN_MB || "50",
+                Number(process.env.CONFIG_PRESIGNED_URL_EXPIRATION_IN_SECONDS) || 7200
+            ))
         })
         it('successfully setups a new ceremony', async () => {
 
