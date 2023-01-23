@@ -5,7 +5,6 @@ import { connectFirestoreEmulator, Firestore, getFirestore } from "firebase/fire
 import { connectFunctionsEmulator, Functions, getFunctions } from "firebase/functions"
 import { connectAuthEmulator, getAuth, signInAnonymously, UserCredential } from "firebase/auth"
 import { fakeCeremoniesData, fakeCircuitsData } from "../data/samples"
-
 dotenv.config({ path: `${__dirname}/../../.env.test` })
 
 // Emulator data.
@@ -170,3 +169,17 @@ export const deleteCeremony = async (adminFirestore: FirebaseFirestore.Firestore
 
     await adminFirestore.collection(`ceremonies`).doc(fakeCeremoniesData.fakeCeremonyOpenedFixed.uid).delete()
 }
+
+
+/**
+ * Return a string with double digits if the amount is one digit only.
+ * @param amount <number>
+ * @returns <string>
+ */
+export const convertToDoubleDigits = (amount: number): string => (amount < 10 ? `0${amount}` : amount.toString())
+
+export const circuitFileName = "division.circom"
+export const r1csFileName = "division.r1cs"
+export const circuitPath = `${__dirname}/../data/${circuitFileName}`
+export const r1csFilePath = `${__dirname}/../data/${r1csFileName}`
+export const potFilePath = `${__dirname}/../data/powersOfTau28_hez_final_02.ptau`
