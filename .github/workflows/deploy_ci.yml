@@ -38,39 +38,38 @@ jobs:
           PROJECT_PATH: packages/backend/
 
   test:
-    name: test
-        runs-on: ubuntu-22.04
-        environment: p0tion-ci-environment
-        steps:
-            - name: checkout repo
-              uses: actions/checkout@v3
+    runs-on: ubuntu-22.04
+    environment: p0tion-ci-environment
+    steps:
+        - name: checkout repo
+          uses: actions/checkout@v3
 
-            - uses: actions/setup-node@v3
-              with:
-                  node-version: 16
-                  cache: yarn
+        - uses: actions/setup-node@v3
+          with:
+              node-version: 16
+              cache: yarn
 
-            - name: write env file for Firebase
-              run: |
-                  echo "${{ secrets.ACTIONS_ENV_FILE }}" > ./packages/actions/.env
+        - name: write env file for Firebase
+          run: |
+              echo "${{ secrets.ACTIONS_ENV_FILE }}" > ./packages/actions/.env
 
-            - name: write Firebase service account key
-              id: create-json
-              uses: jsdaniell/create-json@v1.2.1
-              with:
-                  name: "serviceAccountKey.json"
-                  json: ${{ secrets.SERVICE_ACCOUNT_KEY }}
-                  dir: "./packages/backend/"
+        - name: write Firebase service account key
+          id: create-json
+          uses: jsdaniell/create-json@v1.2.1
+          with:
+              name: "serviceAccountKey.json"
+              json: ${{ secrets.SERVICE_ACCOUNT_KEY }}
+              dir: "./packages/backend/"
 
-            - name: install dependencies
-              run: yarn install --frozen-lockfile
+        - name: install dependencies
+          run: yarn install --frozen-lockfile
 
-            - name: build packages
-              run: yarn build
-              env:
-                  NODE_OPTIONS: "--max_old_space_size=4096"
+        - name: build packages
+          run: yarn build
+          env:
+              NODE_OPTIONS: "--max_old_space_size=4096"
 
-            - name: run test (unit & e2e)
-              run: yarn test:ci-prod
-              env:
-                  GOOGLE_APPLICATION_CREDENTIALS: ./packages/backend/serviceAccountKey.json
+        - name: run test (unit & e2e)
+          run: yarn test:ci-prod
+          env:
+              GOOGLE_APPLICATION_CREDENTIALS: ./packages/backend/serviceAccountKey.json
