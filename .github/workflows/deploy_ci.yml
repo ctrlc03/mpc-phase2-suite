@@ -13,7 +13,7 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -26,18 +26,53 @@ jobs:
       run: |
         yarn
 
-    ## Save Service Account Key
-    - name: write Firebase service account key (from secrets to json)
-      id: create-json
-      uses: jsdaniell/create-json@v1.2.1
-      with:
-          name: "serviceAccountKey.json"
-          json: ${{ secrets.SERVICE_ACCOUNT_KEY }}
-          dir: "./packages/backend/"
-    
+    - name: write env file for Firebase
+            run: |
+                echo "${{ secrets.BACKEND_ENV_FILE }}" > ./packages/backend/.env
+
     # Deploying the functions to firebase
     - name:  Deploy to Firebase
-      run: npx firebase deploy --only functions --project prod
-      working-directory: "./packages/backend/"
+      uses: w9jds/firebase-action@master
+      with:
+          args: deploy --only functions --project prod
       env:
-          GOOGLE_APPLICATION_CREDENTIALS: "./serviceAccountKey.json"
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          PROJECT_PATH: packages/backend/
+
+  test:
+    name: test
+        runs-on: ubuntu-22.04
+        environment: p0tion-ci-environment
+        steps:
+            - name: checkout repo
+              uses: actions/checkout@v3
+
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: 16
+                  cache: yarn
+
+            - name: write env file for Firebase
+              run: |
+                  echo "${{ secrets.ACTIONS_ENV_FILE }}" > ./packages/actions/.env
+
+            - name: write Firebase service account key
+              id: create-json
+              uses: jsdaniell/create-json@v1.2.1
+              with:
+                  name: "serviceAccountKey.json"
+                  json: ${{ secrets.SERVICE_ACCOUNT_KEY }}
+                  dir: "./packages/backend/"
+
+            - name: install dependencies
+              run: yarn install --frozen-lockfile
+
+            - name: build packages
+              run: yarn build
+              env:
+                  NODE_OPTIONS: "--max_old_space_size=4096"
+
+            - name: run test (unit & e2e)
+              run: yarn test:ci-prod
+              env:
+                  GOOGLE_APPLICATION_CREDENTIALS: ./packages/backend/serviceAccountKey.json
