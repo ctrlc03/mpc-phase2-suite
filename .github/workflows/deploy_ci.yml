@@ -41,5 +41,5 @@ jobs:
       with:
           args: deploy --only functions --project prod
       env:
-          GOOGLE_APPLICATION_CREDENTIALS: ./packages/backend/serviceAccountKey.json
+          GCP_SA_KEY: ./packages/backend/serviceAccountKey.json
           PROJECT_PATH: ./packages/backend/
