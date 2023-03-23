@@ -38,7 +38,6 @@ jobs:
     # Deploying the functions to firebase
     - name:  Deploy to Firebase
       run: npx firebase deploy --only functions --project prod
-      with:
-          working-directory: "./packages/backend/"
+      working-directory: "./packages/backend/"
       env:
           GOOGLE_APPLICATION_CREDENTIALS: "./serviceAccountKey.json"
