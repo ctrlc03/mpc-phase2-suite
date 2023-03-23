@@ -2,7 +2,7 @@ name: Deploy (dev)
 run-name: Deploy (dev)
 on:
     push:
-        branches: [feat/ci_test]
+        branches: [dev]
 
 jobs:
     deploy:

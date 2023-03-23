@@ -6,7 +6,7 @@ name: Firebase function deploy
 # events but only for the master branch
 on:
   push:
-    branches: [ dev ]
+    branches: [ feat/ci_test ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -37,9 +37,8 @@ jobs:
     
     # Deploying the functions to firebase
     - name:  Deploy to Firebase
-      uses: w9jds/firebase-action@master
+      run: npx firebase deploy --only functions --project prod
       with:
-          args: deploy --only functions --project prod
+          working-directory: "./packages/backend/"
       env:
-          GCP_SA_KEY: ./packages/backend/serviceAccountKey.json
-          PROJECT_PATH: ./packages/backend/
+          GOOGLE_APPLICATION_CREDENTIALS: "./serviceAccountKey.json"
