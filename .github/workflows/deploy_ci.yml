@@ -22,12 +22,11 @@ jobs:
 
     # Runs a single command using the runners shell
     # And of course we need to goto our functions folder to deploy
-    - name: Install npm packages
+    - name: Install npm packages and write env
       run: |
         yarn
-
-    - name: write env file for Firebase
-      run: echo "${{ secrets.BACKEND_ENV_FILE }}" > ./packages/backend/.env
+        echo "${{ secrets.ACTIONS_ENV_FILE }}" > ./packages/actions/.env
+        echo "${{ secrets.BACKEND_ENV_FILE }}" > ./packages/backend/.env
 
     # Deploying the functions to firebase
     - name:  Deploy to Firebase
