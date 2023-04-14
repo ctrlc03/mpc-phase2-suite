@@ -411,6 +411,12 @@ export const verifycontribution = functionsV2.https.onCall(
         // Step (1).
         if (isContributing || isFinalizing) {
             // Step (1.A.1).
+
+            // Let's store on the participant doc that it has started the verification process
+            participantDoc.ref.update({
+                verifying: true 
+            })
+
             // Get storage paths.
             const verificationTranscriptStoragePathAndFilename = getTranscriptStorageFilePath(
                 prefix,
@@ -605,6 +611,11 @@ export const verifycontribution = functionsV2.https.onCall(
         }
 
         // Step (2).
+        // done verifying 
+        participantDoc.ref.update({
+            verifying: false 
+        })
+        
         await batch.commit()
 
         printLog(

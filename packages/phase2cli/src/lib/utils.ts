@@ -727,6 +727,11 @@ export const handleStartOrResumeContribution = async (
         // Format verification time.
         const { seconds, minutes, hours } = getSecondsMinutesHoursFromMillis(avgTimings.verifyCloudFunction)
 
+        if (participant.data.verifying) {
+            console.log("Already contributing")
+            return 
+        }
+
         // Custom spinner for visual feedback.
         spinner.text = `Verifying your contribution... ${
             avgTimings.verifyCloudFunction > 0
